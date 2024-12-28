@@ -1,6 +1,6 @@
 import {Request, Response, NextFunction} from 'express';
 import * as jwt from 'jsonwebtoken';
-import { UserSigninSchema, UserSignupSchema } from '../schemas/user.schema';
+import { ForgotPasswordRequestSchema, ResetPasswordSchema, UserSigninSchema, UserSignupSchema } from '../schemas/user.schema';
 import {prisma } from "../utils/prisma";
 import { BadRequestException, InvalidInputException, NotFoundException, UnprocessableEntityException } from '../exceptions/exceptions';
 import { JWT_SECRET } from '../utils/secrets';
@@ -35,9 +35,9 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 
 export const signup = async  (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        UserSignupSchema.parse(req.body);
+       const data =  UserSignupSchema.parse(req.body);
 
-        const {email, password, name} = req.body;
+        const {email, password, name} = data;
         
         if (!email || !password || !name) {
             return next(new BadRequestException('Please provide email, password and name'))
@@ -72,6 +72,62 @@ export const getUser = async  (req: Request, res: Response, next: NextFunction):
         res.status(201).send(user);
 
         successResponse(res, user, 201, 'User fetched successfully');
+    } catch (error: any) {
+        next(new UnprocessableEntityException(error?.issues)) 
+    }
+}
+
+export const resetPassword = async  (req: Request, res: Response, next: NextFunction): Promise<void> => {    
+    try {
+        const data =  ResetPasswordSchema.parse(req.body);
+
+        const {oldPassword, newPassword} = data;
+        if (!oldPassword || !newPassword) {
+            return next(new BadRequestException('Please provide old password and new password'))
+        }
+
+        // check if user already exists
+        let user = await prisma.user.findUnique({where: {id: req.user?.id}});
+        if (!user) {
+            return next(new NotFoundException('User does not exist'))
+        }
+
+        if(!PasswordHelper.comparePassword(oldPassword, user!.password)) {
+            return next( new BadRequestException('Invalid credentials'))
+        }
+
+        user = await prisma.user.update({
+            where: {id: req.user?.id},
+            data: {
+                password: await PasswordHelper.hashPassword(newPassword)
+            }
+        });
+
+        successResponse(res, user, 201, 'Password reset successfully');
+    } catch (error: any) {
+        next(new UnprocessableEntityException(error?.issues)) 
+    }
+}
+
+export const forgotPassword = async  (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const data =  ForgotPasswordRequestSchema.parse(req.body);
+
+        const {email} = data;
+        if (!email) {
+            return next(new BadRequestException('Please provide email'))
+        }
+
+        // check if user already exists
+        let user = await prisma.user.findUnique({where: {email}});
+        if (!user) {
+            return next(new NotFoundException('User does not exist'))
+        }
+
+        // send email to user with otp
+        // TODO: Implement email sending logic here
+
+        successResponse(res, {}, 201, 'Password reset link sent to email');
     } catch (error: any) {
         next(new UnprocessableEntityException(error?.issues)) 
     }
