@@ -39,7 +39,7 @@ export class ConflictException extends HttpError {
 }
 export class InternalServerErrorException extends HttpError {
     constructor( message: string) {
-        super(500, message, ErrorCodes.INTERNAL_SERVER_ERROR, "InternalServerError");
+        super(500, message, ErrorCodes.INTERNAL_SERVER_ERROR, "InternalServerError",);
 
     }
 }
@@ -77,8 +77,8 @@ export class UnprocessableEntityException extends HttpError {
 }
 
 export class InvalidInputException extends HttpError {
-    constructor( message: string) {
-        super(504, message, ErrorCodes.INVALID_INPUT, "InvalidInputException");
+    constructor( message: string, stack?: any) {
+        super(504, message, ErrorCodes.INVALID_INPUT, "InvalidInputException", stack);
     }
 }
 

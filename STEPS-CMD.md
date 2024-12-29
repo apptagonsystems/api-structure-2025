@@ -80,6 +80,11 @@
 ```bash
     npm i zod
 ```
+### REDIS & BULLMQ
+```bash
+    npm i bullmq
+```
+ 
 
 ### FOLDER STRUCTURE
 - src

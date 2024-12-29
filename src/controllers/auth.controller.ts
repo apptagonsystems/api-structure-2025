@@ -15,6 +15,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
         
     if (!email || !password ) {
         return  next(new InvalidInputException('Please provide email and password'))
+        
     }
 
     // check if user already exists
