@@ -12,19 +12,18 @@ import { PORT } from "./utils/secrets";
 import { connectDatabase } from "./config/database";
 
 import {prisma} from "./utils/prisma";
+import { configureSocket } from "./socket/configureSocket";
+import authMiddleware from "./middleware/auth.middleware";
 
 const morganFormat = ":method :url :status :response-time ms";
 
+
+// Initialize Express and HTTP server
 const app:Application = express();
-
-const server  =  createServer(app);
-
-
-
+const server = createServer(app);
 
 // Cors
 app.use(cors());
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -48,23 +47,13 @@ app.use(
 // Routes
 app.use("/api", router);
 
-// initializeSocketServer(server);
+// Configure Socket.IO
+const io = configureSocket(server);
 
-// export const prismaClient = new PrismaClient({
-//   log: ["query", "info", "warn"],
-// }).$extends({
-//   query: {
-//     user: {
-//       create({args, query}){
-//         args.data = UserSignupSchema.parse(args.data);
-//         return query(args);
-//       }
-//     }
-//   }
-// });
-
+app.set("io", io); // using set method to mount the `io` instance on the app to avoid usage of `global`
 
 // Error handling
+// app.use(authMiddleware);
 app.use(errorMiddleware);
 
 
@@ -73,7 +62,7 @@ connectDatabase()
   .catch((error) => {
     console.error('Failed to connect to database:', error);
     process.exit(1);
-  });
+});
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
@@ -83,5 +72,5 @@ process.on('SIGINT', async () => {
 
 
 
-app.listen(PORT, () => {console.log("Server is running on port 3000")});
+server.listen(PORT, () => {console.log("Server is running on port 3000")});
 
